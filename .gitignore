@@ -1,7 +1,7 @@
 Release
 CakeBuild
-GlideView/bin
-GlideView/obj
+Wholtpo/bin
+Wholtpo/obj
 .sconsign.dblite
 .sconscache.py
-GlideView/modinfo.json
+Wholtpo/modinfo.json
