@@ -1,0 +1,7 @@
+Release
+CakeBuild
+GlideView/bin
+GlideView/obj
+.sconsign.dblite
+.sconscache.py
+GlideView/modinfo.json
