@@ -44,6 +44,7 @@ public static class FirepitSlotPatch {
 public static class FirepitGuiPatch {
     [HarmonyPostfix]
     public static void Postfix(BlockEntityOpenableContainer __instance) {
+        if (__instance.Api == null) return; // add this
         if (__instance is not BlockEntityFirepit firepit)
             return;
         var capi = __instance.Api as ICoreClientAPI;
