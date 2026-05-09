@@ -1,5 +1,4 @@
-//using HarmonyLib;
-
+using HarmonyLib;
 using Vintagestory.GameContent;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -16,62 +15,98 @@ using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 using HarmonyLib;
 
-public static class FirepitPatch
-{
+//public static class FirepitPatch {
+//
+//    private static readonly FieldInfo _inventoryField =
+//        typeof(BlockEntityFirepit).GetField("inventory", BindingFlags.NonPublic | BindingFlags.Instance);
+//
+//    private static bool detectMealinFirepit(IInventory inv) {
+//        var potStack = inv[2].Itemstack;
+//        return potStack != null && potStack.Collectible.GetType().Name == "BlockCookingContainer";
+//    }
+//
+//    private static void fixFirePitCookingPot(ICoreClientAPI capi, BlockEntityFirepit firepit) {
+//        var inv = _inventoryField?.GetValue(firepit) as IInventory;
+//        if (inv == null)
+//            return;
+//        if (inv[1].Empty && detectMealinFirepit(inv)) {
+//            var packet = inv.TryFlipItems(1, inv[2]);
+//            if (packet != null)
+//                capi.Network.SendPacketClient(packet);
+//        }
+//    }
+//
+//    [HarmonyPatch(typeof(BlockEntityFirepit), "OnSlotModified")]
+//    public static void SlotModifiedPostfix(BlockEntityFirepit __instance) {
+//        var capi = __instance.Api as ICoreClientAPI;
+//        if (capi == null) {
+//            return;
+//        }
+//
+//        capi.Logger.Error("OMG");
+//        capi.Event.EnqueueMainThreadTask(() => { fixFirePitCookingPot(capi, __instance); }, "Wholtpo");
+//    }
+//
+//    [HarmonyPatch(typeof(BlockEntityOpenableContainer), "toggleInventoryDialogClient")]
+//    public static void Postfix(BlockEntityOpenableContainer __instance) {
+//        if (__instance is not BlockEntityFirepit firepit)
+//            return;
+//        var capi = __instance.Api as ICoreClientAPI;
+//
+//        // This may be on server side?
+//        if (capi == null)
+//            return;
+//
+//        capi.Logger.Error("OMG");
+//        capi.Event.EnqueueMainThreadTask(() => { fixFirePitCookingPot(capi, firepit); }, "Wholtpo");
+//    }
+//}
 
+public static class FirepitPatchHelper {
     private static readonly FieldInfo _inventoryField =
         typeof(BlockEntityFirepit).GetField("inventory", BindingFlags.NonPublic | BindingFlags.Instance);
 
-    private static bool detectMealinFirepit(IInventory inv) {
+    public static bool DetectMealInFirepit(IInventory inv) {
         var potStack = inv[2].Itemstack;
         return potStack != null && potStack.Collectible.GetType().Name == "BlockCookingContainer";
     }
 
-    private static void fixFirePitCookingPot(ICoreClientAPI capi) {
-        var sel = capi.World.Player.CurrentBlockSelection;
-        if (sel == null)
-            return;
-        capi.ShowChatMessage("OMG 1"); return;
-
-        var be = capi.World.BlockAccessor.GetBlockEntity(sel.Position);
-
-        if (be is not BlockEntityFirepit firepit)
-            return;
-        capi.ShowChatMessage("OMG 2"); return;
-
-        var inv = _inventoryField?.GetValue(be) as IInventory;
-
-        if (inv == null) {
-            return;
-        }
-        capi.ShowChatMessage("OMG 3"); return;
-
-        if (inv[1].Empty && detectMealinFirepit(inv)) {
+    public static void FixFirePitCookingPot(ICoreClientAPI capi, BlockEntityFirepit firepit) {
+        var inv = _inventoryField?.GetValue(firepit) as IInventory;
+        if (inv == null) return;
+        if (inv[1].Empty && DetectMealInFirepit(inv)) {
             var packet = inv.TryFlipItems(1, inv[2]);
-            capi.ShowChatMessage("OMG 4"); return;
             if (packet != null)
                 capi.Network.SendPacketClient(packet);
         }
     }
+}
 
-    public static void SlotModifiedPostfix(BlockEntityFirepit __instance)
-    {
+[HarmonyPatch(typeof(BlockEntityFirepit), "OnSlotModified")]
+public static class FirepitSlotPatch {
+    [HarmonyPostfix]
+    public static void Postfix(BlockEntityFirepit __instance) {
         var capi = __instance.Api as ICoreClientAPI;
         if (capi == null) {
-            capi.ShowChatMessage("OMG NO capi"); return;
             return;
         }
 
-        //if (__instance.World.Side != EnumAppSide.Client) {
-        //    capi.ShowChatMessage("OMG not client"); return;
-        //}
-        //
-        capi.Event.EnqueueMainThreadTask(() => {
-            fixFirePitCookingPot(capi);
-        }, "firepitpotreturn");
-
-        //fixFirePitCookingPot(capi);
-        //capi.ShowChatMessage("OMG");
+        capi.Event.EnqueueMainThreadTask(() => { FirepitPatchHelper.FixFirePitCookingPot(capi, __instance); }, "Wholtpo");
     }
 }
 
+[HarmonyPatch(typeof(BlockEntityOpenableContainer), "toggleInventoryDialogClient")]
+public static class FirepitGuiPatch {
+    [HarmonyPostfix]
+    public static void Postfix(BlockEntityOpenableContainer __instance) {
+        if (__instance is not BlockEntityFirepit firepit)
+            return;
+        var capi = __instance.Api as ICoreClientAPI;
+
+        // This may be on server side?
+        if (capi == null)
+            return;
+
+        capi.Event.EnqueueMainThreadTask(() => { FirepitPatchHelper.FixFirePitCookingPot(capi, firepit); }, "Wholtpo");
+    }
+}

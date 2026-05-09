@@ -12,19 +12,36 @@ using HarmonyLib;
 namespace Wholtpo {
 
 public class WholtpoModSystem : ModSystem {
-
-    //ICoreClientAPI _capi;
-
-    //public void log(string message) {
-    //    _capi.ShowChatMessage(message);
-    //    _capi.Logger.Debug(message);
-    //}
-
     public override void StartClientSide(ICoreClientAPI api) {
         Mod.Logger.Notification("Wholtpo starting");
         var harmony = new Harmony("glideview");
-        var method = AccessTools.Method(typeof(BlockEntityFirepit), "OnSlotModified");
-        harmony.Patch(method, postfix: new HarmonyMethod(typeof(FirepitPatch), "SlotModifiedPostfix"));
+        //harmony.PatchAll();
+        harmony.PatchAll(Assembly.GetExecutingAssembly());
+        foreach (var method in Harmony.GetAllPatchedMethods())
+            api.Logger.Debug($"[wholtpo] Patched: {method.Name}");
+        //{
+        //  var method =
+        //      AccessTools.Method(typeof(BlockEntityFirepit), "OnSlotModified");
+        //  if (method == null) {
+        //    api.Logger.Error(
+        //        $"Wholtpo: fail to found method OnSlotModified  stopping the mod");
+        //    return;
+        //  }
+        //  harmony.Patch(method, postfix: new HarmonyMethod(typeof(FirepitPatch),
+        //                                                   "SlotModifiedPostfix"));
+        //}
+
+        //{
+        //  var method = AccessTools.Method(typeof(BlockEntityOpenableContainer),
+        //                                  "toggleInventoryDialogClient");
+        //  if (method == null) {
+        //    api.Logger.Error(
+        //        $"Wholtpo: fail to found method toggleInventoryDialogClient stopping the mod");
+        //    return;
+        //  }
+        //  harmony.Patch(
+        //      method, postfix: new HarmonyMethod(typeof(FirepitPatch), "Postfix"));
+        //}
     }
 }
 }
