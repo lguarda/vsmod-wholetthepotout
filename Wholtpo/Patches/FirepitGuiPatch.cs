@@ -124,12 +124,10 @@ public static class FirepitRightClickPatch {
             capi.Network.SendPacketClient(inv.Open(byPlayer));
             capi.Network.SendBlockEntityPacket(__instance.Pos, 1000, null);
 
-            capi.ShowChatMessage($"1 try flip with item for slot {emptySlotId}");
             var packet = hotbar.TryFlipItems(emptySlotId, firepitSlot);
             bool ret = true;
 
             if (packet != null) {
-                capi.ShowChatMessage($"2 try flip with item for slot {emptySlotId}");
                 capi.Network.SendPacketClient(packet);
 
                 ret = false; // if we took the item, cancel GUI opening
