@@ -107,24 +107,39 @@ public static class FirepitRightClickPatch {
         if (emptySlotId < 0)
             return true;
 
-        // So fun fact it's not "open" but it work without it so let's not do this
-        // capi.ShowChatMessage($"is already open?: {inv.HasOpened(byPlayer)}");
-        // capi.Network.SendPacketClient(inv.Open(byPlayer));
+        // Apparently the game client do something special when user have a crock pot/bowl in hand
+        // sot first lets' switch the ActiveHotbarSlotNumber
+        capi.World.Player.InventoryManager.ActiveHotbarSlotNumber = emptySlotId;
 
-        // so in BlockEntityOpenableContainer.cs packet 1000 is sent by toggleInventoryDialogClient
-        // then receive by OnReceivedClientPacket in order to mark the inventory as "open" for the client
-        // this is mandatory to stay synced with the server when doing the logic
-        capi.Network.SendBlockEntityPacket(__instance.Pos, 1000, null);
+        // then in the main thread handle the logic
+        capi.Event.EnqueueMainThreadTask(() => {
 
-        var packet = hotbar.TryFlipItems(emptySlotId, firepitSlot);
-        if (packet != null) {
-            capi.World.Player.InventoryManager.ActiveHotbarSlotNumber = emptySlotId;
-            capi.Network.SendPacketClient(packet);
-            return false; // if we took the item, cancel GUI opening
-        }
+            // So fun fact it's not "open" but it work without it so let's not do this
+            // capi.ShowChatMessage($"is already open?: {inv.HasOpened(byPlayer)}");
+            // capi.Network.SendPacketClient(inv.Open(byPlayer));
 
-        capi.Network.SendBlockEntityPacket(__instance.Pos, 1001, null);
+            // so in BlockEntityOpenableContainer.cs packet 1000 is sent by toggleInventoryDialogClient
+            // then receive by OnReceivedClientPacket in order to mark the inventory as "open" for the client
+            // this is mandatory to stay synced with the server when doing the logic
+            capi.Network.SendPacketClient(inv.Open(byPlayer));
+            capi.Network.SendBlockEntityPacket(__instance.Pos, 1000, null);
 
-        return true;
+            capi.ShowChatMessage($"1 try flip with item for slot {emptySlotId}");
+            var packet = hotbar.TryFlipItems(emptySlotId, firepitSlot);
+            bool ret = true;
+
+            if (packet != null) {
+                capi.ShowChatMessage($"2 try flip with item for slot {emptySlotId}");
+                capi.Network.SendPacketClient(packet);
+
+                ret = false; // if we took the item, cancel GUI opening
+            }
+
+            capi.Network.SendBlockEntityPacket(__instance.Pos, 1001, null);
+            capi.Network.SendPacketClient(inv.Close(byPlayer));
+        }, "Wholtpo");
+
+        // and return fols to prevent gui to be opend 
+        return false;
     }
 }
