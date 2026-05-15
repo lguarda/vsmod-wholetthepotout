@@ -7,7 +7,7 @@ namespace Wholtpo {
 public class WholtpoModSystem : ModSystem {
     public override void StartClientSide(ICoreClientAPI api) {
         Mod.Logger.Notification("Wholtpo starting");
-        var harmony = new Harmony("glideview");
+        var harmony = new Harmony("wholtpo");
         harmony.PatchAll();
         // harmony.PatchAll(Assembly.GetExecutingAssembly());
         // foreach (var method in Harmony.GetAllPatchedMethods())

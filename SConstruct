@@ -16,7 +16,7 @@ env["GIT_VERSION"] = git_version()
 
 
 
-wholtpo_mod_info = setup_modinfo(env, "Wholtpo", False, True, "wholtpo", "Glide View", "Automaticaly switch to third person view when gliding but also when riding elk and sailing boat/raft")
+wholtpo_mod_info = setup_modinfo(env, "Wholtpo", False, True, "wholtpo", "Who let the pot out", "Switch back the cooking pot automatically + allow taking crucible with melted metal using right click")
 wholtpo_cake = setup_cake_build(env, "CakeBuild", "Wholtpo", "Release")
 wholtpo_sources = Glob("Wholtpo/*.cs") + Glob("Wholtpo/Patches/*.cs")
 
