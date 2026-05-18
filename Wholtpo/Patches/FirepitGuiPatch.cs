@@ -51,26 +51,41 @@ public static class FirepitPatchHelper {
             var packet = inv.TryFlipItems(VS_FIREPIT_RECIPIENT_INDEX, slot);
             if (packet != null)
                 capi.Network.SendPacketClient(packet);
+
+            // Ok so this put pack the lid by reseting client side render
+            var rendererObj = firepit.GetType().GetField("renderer", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?.GetValue(firepit) as FirepitContentsRenderer;
+            if (rendererObj != null) {
+                rendererObj.contentStackRenderer?.Dispose();
+                rendererObj.contentStackRenderer = null;
+                rendererObj.ContentStack = null;
+            }
+            typeof(BlockEntityFirepit).GetMethod("UpdateRenderer", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?.Invoke(firepit, null);
         }
     }
 }
 
-// Auto-swap empty cooking pot back to input slot when a slot changes
-[HarmonyPatch(typeof(BlockEntityFirepit), "OnSlotModified")]
-public static class FirepitSlotPatch {
+// This is a little bit dumb but i don't know what else to patch client side
+// on interact just wait 200ms then run the logic
+[HarmonyPatch(typeof(BlockFirepit), "OnBlockInteractStart")]
+public static class FirepitOnInteractFixPot {
     [HarmonyPostfix]
-    public static void Postfix(BlockEntityFirepit __instance) {
-        var capi = __instance.Api as ICoreClientAPI;
-        if (capi == null)
-            return;
-        capi.Event.EnqueueMainThreadTask(() => { FirepitPatchHelper.FixFirePitCookingPot(capi, __instance); },
-                                         "Wholtpo");
+    public static void Postfix(BlockFirepit __instance, IWorldAccessor world, IPlayer byPlayer, BlockSelection blockSel) {
+        var capi = typeof(BlockFirepit).GetField("capi", BindingFlags.NonPublic | BindingFlags.Instance)
+        ?.GetValue(__instance) as ICoreClientAPI;
+        if (capi == null) return;
+        var be = world.BlockAccessor.GetBlockEntity(blockSel.Position) as BlockEntityFirepit;
+        if (be == null) return;
+        be.RegisterDelayedCallback(dt => {
+            FirepitPatchHelper.FixFirePitCookingPot(capi, be);
+        }, 200);
     }
 }
 
 // Auto-swap empty cooking pot back to input slot when GUI is opened
 [HarmonyPatch(typeof(BlockEntityOpenableContainer), "toggleInventoryDialogClient")]
-public static class FirepitGuiPatch {
+public static class FirepitOnGuiFixPot {
     [HarmonyPostfix]
     public static void Postfix(BlockEntityOpenableContainer __instance) {
         if (__instance is not BlockEntityFirepit firepit)
@@ -125,12 +140,9 @@ public static class FirepitRightClickPatch {
             capi.Network.SendBlockEntityPacket(__instance.Pos, 1000, null);
 
             var packet = hotbar.TryFlipItems(emptySlotId, firepitSlot);
-            bool ret = true;
 
             if (packet != null) {
                 capi.Network.SendPacketClient(packet);
-
-                ret = false; // if we took the item, cancel GUI opening
             }
 
             capi.Network.SendBlockEntityPacket(__instance.Pos, 1001, null);
