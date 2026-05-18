@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, "vscons-build-utils/site_scons")
 
-from build_utils import git_version, dotnet_run, vs_run, roslynator, get_scons_vs_option, setup_modinfo, setup_cake_build
+from build_utils import git_version, dotnet_run, vs_run, roslynator, get_scons_vs_option, setup_modinfo, setup_cake_build, make_copy_target
 
 vars = Variables('.sconscache.py')
 get_scons_vs_option(vars)
@@ -48,3 +48,6 @@ env.Alias("install", wholtpo_install_release)
 
 run = env.Command("run", [], run_program)
 env.AlwaysBuild(run)
+
+make_copy_target("backupsave", f"{env["VINTAGE_STORY_DATA"]}/Saves", f"{env["VINTAGE_STORY_DATA"]}/Saves.bak")
+make_copy_target("restoresave", f"{env["VINTAGE_STORY_DATA"]}/Saves.bak", f"{env["VINTAGE_STORY_DATA"]}/Saves")
